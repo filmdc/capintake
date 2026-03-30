@@ -19,6 +19,19 @@ class NpiReportService
     }
 
     /**
+     * Normalize end date to include the full day.
+     *
+     * SQLite stores service_date as datetime (e.g., '2026-03-30 00:00:00').
+     * A BETWEEN '2026-03-30' AND '2026-03-30' excludes this because the string
+     * '2026-03-30 00:00:00' > '2026-03-30' lexicographically. Appending the
+     * time component ensures the full day is included.
+     */
+    protected function endOfDay(string $date): string
+    {
+        return str_contains($date, ' ') ? $date : $date . ' 23:59:59';
+    }
+
+    /**
      * Generate the full NPI report for a date range.
      *
      * Returns a collection of goals, each with indicators, counts, and demographics.
@@ -96,7 +109,7 @@ class NpiReportService
             })
             ->leftJoin('service_records as sr', function ($join) use ($startDate, $endDate): void {
                 $join->on('sr.service_id', '=', 's.id')
-                    ->whereBetween('sr.service_date', [$startDate, $endDate])
+                    ->whereBetween('sr.service_date', [$startDate, $this->endOfDay($endDate)])
                     ->whereNull('sr.deleted_at');
             });
 
@@ -121,7 +134,7 @@ class NpiReportService
             })
             ->join('npi_indicator_service as nis', 'nis.service_id', '=', 's.id')
             ->whereIn('nis.npi_indicator_id', $indicatorIds)
-            ->whereBetween('sr.service_date', [$startDate, $endDate])
+            ->whereBetween('sr.service_date', [$startDate, $this->endOfDay($endDate)])
             ->whereNull('sr.deleted_at')
             ->when($this->programId, fn ($q) => $q->where('s.program_id', $this->programId));
 
@@ -205,7 +218,7 @@ class NpiReportService
                 $join->on('ni.id', '=', 'nis.npi_indicator_id')
                     ->where('ni.npi_goal_id', '=', $goalId);
             })
-            ->whereBetween('sr.service_date', [$startDate, $endDate])
+            ->whereBetween('sr.service_date', [$startDate, $this->endOfDay($endDate)])
             ->whereNull('sr.deleted_at');
 
         if ($this->programId) {
@@ -225,7 +238,7 @@ class NpiReportService
                 $join->on('s.id', '=', 'sr.service_id')->whereNull('s.deleted_at');
             })
             ->join('npi_indicator_service as nis', 'nis.service_id', '=', 's.id')
-            ->whereBetween('sr.service_date', [$startDate, $endDate])
+            ->whereBetween('sr.service_date', [$startDate, $this->endOfDay($endDate)])
             ->whereNull('sr.deleted_at');
 
         if ($this->programId) {

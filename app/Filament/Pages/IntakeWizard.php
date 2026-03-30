@@ -304,7 +304,7 @@ class IntakeWizard extends Page
                                 $this->duplicateWarning
                                     ? '<div class="rounded-lg bg-warning-50 dark:bg-warning-900/20 border border-warning-300 dark:border-warning-700 p-4">'
                                         . '<div class="flex items-center gap-2 font-medium text-warning-800 dark:text-warning-200 mb-2">'
-                                        . '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>'
+                                        . '<svg style="width:1.25rem;height:1.25rem;min-width:1.25rem;" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>'
                                         . 'Potential Duplicate Clients Found</div>'
                                         . '<div class="text-sm text-warning-700 dark:text-warning-300 whitespace-pre-line">' . e($this->duplicateWarning) . '</div>'
                                         . '</div>'

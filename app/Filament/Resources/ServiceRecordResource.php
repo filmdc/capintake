@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Enums\IntakeStatus;
 use App\Filament\Resources\ServiceRecordResource\Pages;
 use App\Models\Client;
+use App\Models\Enrollment;
 use App\Models\ServiceRecord;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
@@ -13,6 +15,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -43,11 +46,16 @@ class ServiceRecordResource extends Resource
                     ->schema([
                         Select::make('client_id')
                             ->label('Client')
-                            ->relationship('client', 'first_name')
+                            ->relationship(
+                                'client',
+                                'first_name',
+                                fn ($query) => $query->where('intake_status', IntakeStatus::Complete),
+                            )
                             ->getOptionLabelFromRecordUsing(fn (Client $record): string => $record->fullName())
                             ->required()
                             ->searchable()
-                            ->preload(),
+                            ->preload()
+                            ->live(),
 
                         Select::make('service_id')
                             ->label('Service')
@@ -59,7 +67,7 @@ class ServiceRecordResource extends Resource
                         Select::make('enrollment_id')
                             ->label('Enrollment')
                             ->relationship('enrollment', 'id')
-                            ->getOptionLabelFromRecordUsing(fn ($record): string => "#{$record->id} - {$record->program->name}")
+                            ->getOptionLabelFromRecordUsing(fn (Enrollment $record): string => "#{$record->id} - {$record->program->name} ({$record->status->label()})")
                             ->searchable()
                             ->preload(),
 
