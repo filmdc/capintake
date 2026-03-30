@@ -7,7 +7,7 @@ CAPIntake is an open-source client intake and case management system for Communi
 ## Tech Stack
 
 - **Framework:** Laravel 11 (PHP 8.2+, strict types everywhere)
-- **Admin Panel:** Filament 3.x (all CRUD via Filament Resources)
+- **Admin Panel:** Filament 4.x (all CRUD via Filament Resources)
 - **Frontend:** Livewire 3 + Alpine.js (no separate SPA)
 - **Database:** MySQL 8 or PostgreSQL 15 (SQLite for local dev)
 - **Testing:** Pest PHP (every model gets a factory, every resource gets feature tests)

@@ -1,0 +1,60 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Database\Factories;
+
+use App\Models\Client;
+use App\Models\Household;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+class ClientFactory extends Factory
+{
+    protected $model = Client::class;
+
+    public function definition(): array
+    {
+        $ssn = fake()->numerify('#########');
+
+        return [
+            'household_id' => Household::factory(),
+            'first_name' => fake()->firstName(),
+            'last_name' => fake()->lastName(),
+            'middle_name' => fake()->optional(0.3)->firstName(),
+            'date_of_birth' => fake()->dateTimeBetween('-80 years', '-18 years'),
+            'ssn_encrypted' => $ssn,
+            'ssn_last_four' => substr($ssn, -4),
+            'phone' => fake()->phoneNumber(),
+            'email' => fake()->optional(0.6)->safeEmail(),
+            'gender' => fake()->randomElement(['male', 'female', 'non_binary', 'prefer_not_to_say']),
+            'race' => fake()->randomElement([
+                'white', 'black_african_american', 'asian',
+                'american_indian_alaska_native', 'native_hawaiian_pacific_islander',
+                'multi_racial', 'other',
+            ]),
+            'ethnicity' => fake()->randomElement(['hispanic_latino', 'not_hispanic_latino']),
+            'is_veteran' => fake()->boolean(10),
+            'is_disabled' => fake()->boolean(15),
+            'is_head_of_household' => true,
+            'preferred_language' => fake()->randomElement(['en', 'es', 'zh', 'vi', 'ar']),
+            'relationship_to_head' => 'self',
+        ];
+    }
+
+    public function minor(): static
+    {
+        return $this->state(fn () => [
+            'date_of_birth' => fake()->dateTimeBetween('-17 years', '-1 year'),
+            'is_head_of_household' => false,
+            'relationship_to_head' => 'child',
+        ]);
+    }
+
+    public function veteran(): static
+    {
+        return $this->state(fn () => [
+            'is_veteran' => true,
+            'date_of_birth' => fake()->dateTimeBetween('-80 years', '-21 years'),
+        ]);
+    }
+}
