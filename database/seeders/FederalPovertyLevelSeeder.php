@@ -47,18 +47,22 @@ class FederalPovertyLevelSeeder extends Seeder
             ],
         ];
 
-        foreach ($guidelines as $region => $levels) {
-            foreach ($levels as $size => $amount) {
-                FederalPovertyLevel::updateOrCreate(
-                    [
-                        'year' => 2025,
-                        'household_size' => $size,
-                        'region' => $region,
-                    ],
-                    [
-                        'poverty_guideline' => $amount,
-                    ]
-                );
+        // Seed for 2025 and 2026 (use 2025 guidelines as estimate for 2026
+        // until official HHS numbers are published)
+        foreach ([2025, 2026] as $year) {
+            foreach ($guidelines as $region => $levels) {
+                foreach ($levels as $size => $amount) {
+                    FederalPovertyLevel::updateOrCreate(
+                        [
+                            'year' => $year,
+                            'household_size' => $size,
+                            'region' => $region,
+                        ],
+                        [
+                            'poverty_guideline' => $amount,
+                        ]
+                    );
+                }
             }
         }
     }

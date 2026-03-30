@@ -85,6 +85,8 @@ class ProgramBreakdown extends ChartWidget
     protected function getOptions(): array
     {
         return [
+            'maintainAspectRatio' => true,
+            'responsive' => true,
             'scales' => [
                 'y' => [
                     'beginAtZero' => true,

@@ -15,8 +15,6 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Collection;
-use Maatwebsite\Excel\Facades\Excel;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class NpiReport extends Page
@@ -156,8 +154,8 @@ class NpiReport extends Page
         $this->reportData = $service->generate($this->startDate, $this->endDate);
         $this->grandTotal = $service->grandTotalUnduplicatedClients($this->startDate, $this->endDate);
 
-        $programLabel = $this->programId
-            ? Program::find($this->programId)?->name ?? 'Unknown'
+        $programLabel = ! empty($this->programId)
+            ? Program::find((int) $this->programId)?->name ?? 'Unknown'
             : 'All Programs';
 
         Notification::make()
@@ -194,15 +192,13 @@ class NpiReport extends Page
         );
     }
 
-    public function exportCsv(): BinaryFileResponse
+    public function exportCsv(): StreamedResponse
     {
-        $filename = 'npi-report-' . $this->startDate . '-to-' . $this->endDate . '.xlsx';
+        $filename = 'npi-report-' . $this->startDate . '-to-' . $this->endDate . '.csv';
 
         $programIdInt = ! empty($this->programId) ? (int) $this->programId : null;
 
-        return Excel::download(
-            new NpiReportCsvExport($this->startDate, $this->endDate, $programIdInt),
-            $filename,
-        );
+        return (new NpiReportCsvExport($this->startDate, $this->endDate, $programIdInt))
+            ->download($filename);
     }
 }

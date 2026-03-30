@@ -12,7 +12,7 @@
             </x-filament::button>
 
             <x-filament::button wire:click="exportCsv" color="success" icon="heroicon-o-table-cells">
-                Export Excel
+                Export CSV
             </x-filament::button>
         @endif
     </div>
@@ -96,6 +96,14 @@
                     ];
                     $ageLabels = ['0-5', '6-12', '13-17', '18-24', '25-44', '45-54', '55-64', '65+'];
                 @endphp
+
+                @php
+                    $anyDemographicData = collect($this->reportData)->contains(fn ($g) => collect($g['indicators'])->sum('unduplicated_clients') > 0);
+                @endphp
+
+                @if(!$anyDemographicData)
+                    <p class="text-sm text-gray-500 dark:text-gray-400 italic">No demographic data to display — no clients matched any NPI indicator in the selected date range.</p>
+                @endif
 
                 @foreach($this->reportData as $goal)
                     @php

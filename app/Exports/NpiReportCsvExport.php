@@ -5,12 +5,9 @@ declare(strict_types=1);
 namespace App\Exports;
 
 use App\Services\NpiReportService;
-use Maatwebsite\Excel\Concerns\FromArray;
-use Maatwebsite\Excel\Concerns\WithStyles;
-use Maatwebsite\Excel\Concerns\WithTitle;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
-class NpiReportCsvExport implements FromArray, WithTitle, WithStyles
+class NpiReportCsvExport
 {
     public function __construct(
         protected string $startDate,
@@ -18,7 +15,7 @@ class NpiReportCsvExport implements FromArray, WithTitle, WithStyles
         protected ?int $programId = null,
     ) {}
 
-    public function array(): array
+    public function download(string $filename): StreamedResponse
     {
         $service = new NpiReportService();
 
@@ -26,31 +23,29 @@ class NpiReportCsvExport implements FromArray, WithTitle, WithStyles
             $service->forProgram($this->programId);
         }
 
-        $rows = [];
+        $rows = $service->toFlatRows($this->startDate, $this->endDate);
 
-        $rows[] = ['CSBG National Performance Indicators Report'];
-        $rows[] = ['Reporting Period: ' . $this->startDate . ' to ' . $this->endDate];
-        $rows[] = ['Generated: ' . now()->format('m/d/Y h:i A')];
-        $rows[] = [];
-
-        $dataRows = $service->toFlatRows($this->startDate, $this->endDate);
-        foreach ($dataRows as $row) {
-            $rows[] = $row;
-        }
-
-        return $rows;
-    }
-
-    public function title(): string
-    {
-        return 'NPI Report';
-    }
-
-    public function styles(Worksheet $sheet): array
-    {
-        return [
-            1 => ['font' => ['bold' => true, 'size' => 14]],
-            5 => ['font' => ['bold' => true]],
+        $titleRows = [
+            ['CSBG National Performance Indicators Report'],
+            ['Reporting Period: ' . $this->startDate . ' to ' . $this->endDate],
+            ['Generated: ' . now()->format('m/d/Y h:i A')],
+            [],
         ];
+
+        return response()->streamDownload(function () use ($titleRows, $rows): void {
+            $handle = fopen('php://output', 'w');
+
+            foreach ($titleRows as $row) {
+                fputcsv($handle, $row);
+            }
+
+            foreach ($rows as $row) {
+                fputcsv($handle, $row);
+            }
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+        ]);
     }
 }

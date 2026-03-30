@@ -180,7 +180,9 @@ class IntakeWizard extends Page
 
                         TextInput::make('last_name')
                             ->required()
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(fn () => $this->runDuplicateCheck()),
 
                         TextInput::make('middle_name')
                             ->maxLength(255),
@@ -189,7 +191,9 @@ class IntakeWizard extends Page
                             ->required()
                             ->maxDate(now())
                             ->native(false)
-                            ->displayFormat('m/d/Y'),
+                            ->displayFormat('m/d/Y')
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(fn () => $this->runDuplicateCheck()),
 
                         TextInput::make('ssn_encrypted')
                             ->label('Social Security Number')
@@ -316,7 +320,6 @@ class IntakeWizard extends Page
                     ->hidden(fn (): bool => $this->duplicateWarning === null),
             ])
             ->afterValidation(function (): void {
-                $this->checkDuplicates();
                 $this->saveDraftStep1();
             });
     }
@@ -838,7 +841,7 @@ class IntakeWizard extends Page
                                     $caseworker = User::find($e['caseworker_id'] ?? 0);
                                     $html .= '<li class="text-sm">'
                                         . '<span class="font-medium">' . e($program?->name ?? 'Unknown') . '</span>'
-                                        . ' — enrolled ' . e($e['enrolled_at'] ?? 'N/A')
+                                        . ' — enrolled ' . e(isset($e['enrolled_at']) ? date('m/d/Y', strtotime($e['enrolled_at'])) : 'N/A')
                                         . ' — caseworker: ' . e($caseworker?->name ?? 'Unassigned')
                                         . '</li>';
                                 }
@@ -853,6 +856,55 @@ class IntakeWizard extends Page
     // -------------------------------------------------------------------------
     // Duplicate Detection
     // -------------------------------------------------------------------------
+
+    public function runDuplicateCheck(): void
+    {
+        $data = $this->data;
+        $firstName = $data['first_name'] ?? '';
+        $lastName = $data['last_name'] ?? '';
+        $dob = $data['date_of_birth'] ?? '';
+
+        // Only check when we have enough data
+        if (strlen($firstName) < 2 || strlen($lastName) < 2 || empty($dob)) {
+            $this->duplicateWarning = null;
+
+            return;
+        }
+
+        $query = Client::query()->complete();
+
+        if ($this->clientId) {
+            $query->where('id', '!=', $this->clientId);
+        }
+
+        $duplicates = $query->where(function ($q) use ($firstName, $lastName, $dob): void {
+            $q->where(function ($sub) use ($firstName, $lastName, $dob): void {
+                $sub->whereRaw('LOWER(first_name) = ?', [strtolower($firstName)])
+                    ->whereRaw('LOWER(last_name) = ?', [strtolower($lastName)])
+                    ->whereDate('date_of_birth', $dob);
+            });
+
+            $ssn = $this->data['ssn_encrypted'] ?? '';
+            $digits = preg_replace('/\D/', '', $ssn);
+            if (strlen($digits) >= 4) {
+                $lastFour = substr($digits, -4);
+                $q->orWhere('ssn_last_four', $lastFour);
+            }
+        })->get(['id', 'first_name', 'last_name', 'middle_name', 'date_of_birth', 'ssn_last_four']);
+
+        if ($duplicates->isEmpty()) {
+            $this->duplicateWarning = null;
+
+            return;
+        }
+
+        $this->duplicateWarning = $duplicates
+            ->map(fn (Client $c): string => $c->fullName()
+                . ' (DOB: ' . ($c->date_of_birth?->format('m/d/Y') ?? 'N/A')
+                . ', SSN: ***-**-' . ($c->ssn_last_four ?? '????') . ')'
+            )
+            ->join("\n");
+    }
 
     protected function checkDuplicates(): void
     {
