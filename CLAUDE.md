@@ -6,13 +6,13 @@ CAPIntake is an open-source client intake and case management system for Communi
 
 ## Tech Stack
 
-- **Framework:** Laravel 11 (PHP 8.2+, strict types everywhere)
+- **Framework:** Laravel 13 (PHP 8.3+, strict types everywhere)
 - **Admin Panel:** Filament 4.x (all CRUD via Filament Resources)
 - **Frontend:** Livewire 3 + Alpine.js (no separate SPA)
 - **Database:** MySQL 8 or PostgreSQL 15 (SQLite for local dev)
 - **Testing:** Pest PHP (every model gets a factory, every resource gets feature tests)
-- **Reporting:** Laravel Excel + DomPDF for exports
-- **Auth:** Filament's built-in auth with role-based access
+- **Reporting:** DomPDF for PDF exports, plain PHP streaming for CSV
+- **Auth:** Filament's built-in auth with role-based access + FilamentUser interface
 
 ## Domain Vocabulary
 
@@ -31,6 +31,8 @@ Use these exact terms — they match how CAP agencies talk:
 | `NpiCategory`      | A National Performance Indicator goal/indicator for federal reporting |
 | `Outcome`          | Links a ServiceRecord to an NpiCategory for NPI reporting            |
 | `User`             | A system user: admin, supervisor, or caseworker                      |
+| `AgencySetting`    | Singleton model for agency identity, branding, and fiscal year config|
+| `AuditLog`         | Polymorphic record of model changes (who, what, when, old/new vals)  |
 
 ## Code Standards
 
@@ -68,3 +70,15 @@ Use these exact terms — they match how CAP agencies talk:
 - **Don't create Filament Resources without an authorization Policy.** Every resource needs a policy. No exceptions.
 - **Don't skip the factory.** If you create a model, create its factory in the same commit.
 - **Don't build a separate frontend.** Everything goes through Filament and Livewire. No React, no Vue, no Inertia.
+- **Don't log SSN, password, or remember_token in audit logs.** The Auditable trait excludes these — never add them back.
+- **Don't hardcode agency name or branding.** Use `AgencySetting::current()` for agency identity values.
+
+## Mistakes to Avoid (Lessons Learned)
+
+- **Filament 4 Wizard `afterValidation` + `Halt` doesn't fully prevent step advancement.** The step index is incremented before the try/catch. Use reactive `live()` fields for inline validation instead of halt-based step blocking.
+- **The `IntakeWizard.php` is large (1300+ lines).** If adding new steps, consider extracting step logic into dedicated classes.
+- **Filament 4 action imports differ from v3.** Use `\Filament\Actions\CreateAction` (not `Filament\Tables\Actions\CreateAction`). Same for EditAction, DeleteAction, ViewAction.
+- **Filament 4 property types are strict.** `$navigationGroup` must be `string|\UnitEnum|null`. `$view` is instance, not static. Check parent class signatures.
+- **SQLite BETWEEN comparisons with datetimes.** `BETWEEN '2026-03-30' AND '2026-03-30'` excludes `'2026-03-30 00:00:00'` because the datetime string sorts after the date string. Use `endOfDay()` or append `' 23:59:59'`.
+- **User model must implement `FilamentUser` interface.** Without it, `APP_ENV=testing` or production environments return 403 for all authenticated users. Existing local dev hides this bug.
+- **Heroicon Blade components in custom widget views render without size constraints.** Use inline SVG with explicit `style="width:1.25rem;height:1.25rem"` in custom Livewire views.
