@@ -2,6 +2,8 @@
 
 namespace App\Providers\Filament;
 
+use App\Http\Middleware\EnsureSetupComplete;
+use App\Models\AgencySetting;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -21,15 +23,12 @@ class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        return $panel
+        $panel = $panel
             ->default()
             ->id('admin')
             ->path('admin')
             ->login()
             ->passwordReset()
-            ->colors([
-                'primary' => Color::Amber,
-            ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
@@ -47,9 +46,41 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                EnsureSetupComplete::class,
             ])
             ->authMiddleware([
                 Authenticate::class,
             ]);
+
+        // Apply white-label settings if setup is complete
+        $this->applyBranding($panel);
+
+        return $panel;
+    }
+
+    protected function applyBranding(Panel $panel): void
+    {
+        try {
+            $settings = AgencySetting::current();
+        } catch (\Throwable) {
+            // Table may not exist yet during migration
+            $settings = null;
+        }
+
+        if ($settings && $settings->setup_completed) {
+            $panel->brandName($settings->agency_name);
+
+            if ($settings->logo_path) {
+                $panel->brandLogo(asset("storage/{$settings->logo_path}"));
+            }
+
+            $panel->colors([
+                'primary' => Color::hex($settings->primary_color),
+            ]);
+        } else {
+            $panel->colors([
+                'primary' => Color::Amber,
+            ]);
+        }
     }
 }

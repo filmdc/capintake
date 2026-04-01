@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Filament\Resources\UserResource\Pages\CreateUser;
 use App\Filament\Resources\UserResource\Pages\EditUser;
 use App\Filament\Resources\UserResource\Pages\ListUsers;
+use App\Models\AgencySetting;
 use App\Models\User;
 use Filament\Actions\DeleteAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -14,6 +15,7 @@ use Livewire\Livewire;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
+    AgencySetting::create(['agency_name' => 'Test Agency', 'setup_completed' => true]);
     $this->admin = User::factory()->admin()->create();
     $this->supervisor = User::factory()->supervisor()->create();
     $this->caseworker = User::factory()->caseworker()->create();

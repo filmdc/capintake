@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\UserRole;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     use HasFactory, Notifiable, SoftDeletes;
 
@@ -50,6 +52,13 @@ class User extends Authenticatable
     public function serviceRecords(): HasMany
     {
         return $this->hasMany(ServiceRecord::class, 'provided_by');
+    }
+
+    // --- Panel Access ---
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $this->is_active;
     }
 
     // --- Helpers ---
